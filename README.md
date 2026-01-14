@@ -9,6 +9,7 @@
 [![Real-Time](https://img.shields.io/badge/Real--Time-Socket.IO%20%2B%20MQTT-success?style=flat-square)](https://socket.io/)
 [![Voice Control](https://img.shields.io/badge/Voice%20Recognition-✓-orange?style=flat-square)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
 [![Multi-User](https://img.shields.io/badge/Multi--User%20Support-✓-blueviolet?style=flat-square)](https://en.wikipedia.org/wiki/Multi-user)
+![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 
 ##  Table of Contents
 - [Overview](#-overview)
@@ -25,7 +26,6 @@
 - [API Documentation](#-api-documentation)
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
-- [License](#-license)
 
 ##  Overview
 
@@ -178,7 +178,6 @@ cd smartlock-pro
 chmod +x setup.sh
 ./setup.sh
 ```
-
 ##  Hardware Setup
 
 ### Circuit Diagram
@@ -670,12 +669,6 @@ git push origin feature/amazing-feature
 - Write unit tests for new features
 - Update documentation accordingly
 - Use conventional commits
-
-##  License
-
-![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ##  Important Files
 
