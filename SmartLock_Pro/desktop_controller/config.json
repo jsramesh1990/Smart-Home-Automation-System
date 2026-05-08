@@ -1,0 +1,56 @@
+{
+    "server": {
+        "http_port": 8080,
+        "websocket_port": 8081,
+        "enable_ssl": false,
+        "ssl_cert": "certs/server.crt",
+        "ssl_key": "certs/server.key"
+    },
+    "database": {
+        "path": "smartlock.db",
+        "backup_path": "backups/",
+        "backup_interval_hours": 24
+    },
+    "mqtt": {
+        "broker": "localhost",
+        "port": 1883,
+        "client_id": "smartlock_controller",
+        "topics": {
+            "command": "smartlock/+/command",
+            "status": "smartlock/status",
+            "heartbeat": "smartlock/heartbeat"
+        }
+    },
+    "security": {
+        "jwt_secret": "your-super-secret-jwt-key-change-in-production",
+        "session_timeout_minutes": 30,
+        "max_login_attempts": 5,
+        "lockout_minutes": 15,
+        "password_policy": {
+            "min_length": 8,
+            "require_uppercase": true,
+            "require_lowercase": true,
+            "require_numbers": true,
+            "require_special": true
+        }
+    },
+    "voice": {
+        "sample_rate": 16000,
+        "frame_size": 512,
+        "hop_size": 256,
+        "confidence_threshold": 0.75,
+        "wake_words": ["hey smartlock", "open sesame"]
+    },
+    "notifications": {
+        "email": {
+            "enabled": false,
+            "smtp_server": "smtp.gmail.com",
+            "smtp_port": 587,
+            "from_email": "alerts@smartlock.com"
+        },
+        "push": {
+            "enabled": true,
+            "websocket_broadcast": true
+        }
+    }
+}
