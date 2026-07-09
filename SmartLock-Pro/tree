@@ -1,0 +1,152 @@
+SmartLock-Pro/
+│
+├── README.md
+├── LICENSE
+├── .gitignore
+│
+├── docs/
+│   ├── project-overview.md
+│   ├── architecture/
+│   │   ├── system-architecture.md
+│   │   ├── hardware-design.md
+│   │   └── network-diagram.md
+│   ├── api/
+│   │   ├── rest-api-spec.yaml
+│   │   └── mqtt-topics.md
+│   └── user-guide/
+│       ├── installation.md
+│       ├── configuration.md
+│       └── troubleshooting.md
+│
+├── firmware/
+│   ├── esp32/
+│   │   ├── src/
+│   │   │   ├── main.cpp
+│   │   │   ├── config.h
+│   │   │   ├── wifi_manager.cpp
+│   │   │   ├── wifi_manager.h
+│   │   │   ├── ble_manager.cpp
+│   │   │   ├── ble_manager.h
+│   │   │   ├── lock_controller.cpp
+│   │   │   ├── lock_controller.h
+│   │   │   ├── sensor_manager.cpp
+│   │   │   ├── sensor_manager.h
+│   │   │   ├── authentication/
+│   │   │   │   ├── fingerprint.cpp
+│   │   │   │   ├── fingerprint.h
+│   │   │   │   ├── rfid.cpp
+│   │   │   │   ├── rfid.h
+│   │   │   │   ├── keypad.cpp
+│   │   │   │   └── keypad.h
+│   │   │   ├── communication/
+│   │   │   │   ├── mqtt_client.cpp
+│   │   │   │   ├── mqtt_client.h
+│   │   │   │   ├── http_client.cpp
+│   │   │   │   └── http_client.h
+│   │   │   ├── security/
+│   │   │   │   ├── encryption.cpp
+│   │   │   │   ├── encryption.h
+│   │   │   │   ├── otp_generator.cpp
+│   │   │   │   └── otp_generator.h
+│   │   │   └── utilities/
+│   │   │       ├── logger.cpp
+│   │   │       ├── logger.h
+│   │   │       ├── eeprom_manager.cpp
+│   │   │       └── eeprom_manager.h
+│   │   ├── include/
+│   │   │   ├── pins.h
+│   │   │   ├── constants.h
+│   │   │   └── error_codes.h
+│   │   ├── lib/
+│   │   │   ├── Adafruit_Fingerprint/
+│   │   │   ├── MFRC522/
+│   │   │   ├── PubSubClient/
+│   │   │   └── ArduinoJson/
+│   │   ├── test/
+│   │   │   ├── unit_tests/
+│   │   │   └── integration_tests/
+│   │   ├── platformio.ini
+│   │   └── CMakeLists.txt
+│   │
+│   └── raspberry_pi/
+│       ├── src/
+│       │   ├── main.py
+│       │   ├── config.py
+│       │   ├── api_server.py
+│       │   ├── mqtt_broker.py
+│       │   ├── database.py
+│       │   ├── automation_engine.py
+│       │   ├── notification_service.py
+│       │   └── web_dashboard/
+│       │       ├── app.py
+│       │       ├── templates/
+│       │       └── static/
+│       ├── requirements.txt
+│       ├── Dockerfile
+│       └── docker-compose.yml
+│
+├── hardware/
+│   ├── schematics/
+│   │   ├── main-schematic.pdf
+│   │   ├── main-schematic.kicad_sch
+│   │   ├── power-supply.kicad_sch
+│   │   └── sensor-connections.kicad_sch
+│   ├── pcb/
+│   │   ├── pcb-layout.kicad_pcb
+│   │   ├── gerber-files/
+│   │   └── bom.csv
+│   ├── 3d-print/
+│   │   ├── case-v1.stl
+│   │   ├── case-v1.step
+│   │   └── mounting-bracket.stl
+│   └── wiring/
+│       ├── wiring-diagram.png
+│       └── pin-connections.md
+│
+├── mobile-app/
+│   ├── android/
+│   │   ├── app/
+│   │   ├── gradle/
+│   │   └── build.gradle
+│   └── ios/
+│       └── SmartLock.xcodeproj
+│
+├── web-dashboard/
+│   ├── frontend/
+│   │   ├── src/
+│   │   │   ├── App.js
+│   │   │   ├── components/
+│   │   │   ├── pages/
+│   │   │   └── assets/
+│   │   ├── package.json
+│   │   └── webpack.config.js
+│   └── backend/
+│       ├── server.js
+│       ├── routes/
+│       ├── models/
+│       └── controllers/
+│
+├── scripts/
+│   ├── setup/
+│   │   ├── install-deps.sh
+│   │   ├── configure-wifi.sh
+│   │   └── flash-firmware.py
+│   ├── testing/
+│   │   ├── test-hardware.py
+│   │   ├── test-connectivity.sh
+│   │   └── performance-benchmark.py
+│   └── deployment/
+│       ├── deploy-cloud.sh
+│       └── update-ota.py
+│
+└── cloud/
+    ├── aws/
+    │   ├── lambda-functions/
+    │   ├── iot-core-config/
+    │   └── dynamodb-tables/
+    ├── mqtt-broker/
+    │   ├── mosquitto.conf
+    │   └── ssl-certificates/
+    └── database/
+        ├── schema.sql
+        └── migrations/
