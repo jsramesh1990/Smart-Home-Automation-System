@@ -1,0 +1,39 @@
+# SmartLock Pro ACL Rules
+
+# Admin - Full access
+user admin
+topic readwrite /smartlock/#
+
+# Device - Read commands, write status
+user device
+topic read /smartlock/+/commands/#
+topic write /smartlock/+/status/#
+topic write /smartlock/+/events/#
+topic write /smartlock/+/sensors/#
+topic write /smartlock/system/register
+
+# Mobile App - Read status, write commands
+user mobile
+topic read /smartlock/+/status/#
+topic read /smartlock/+/events/access
+topic write /smartlock/+/commands/#
+topic write /smartlock/notification/+/#
+
+# Dashboard - Read everything, write system
+user dashboard
+topic read /smartlock/#
+topic write /smartlock/system/#
+topic write /smartlock/+/commands/config
+
+# Automation - Read and write specific topics
+user automation
+topic read /smartlock/+/status/#
+topic read /smartlock/+/events/#
+topic read /smartlock/+/sensors/#
+topic write /smartlock/+/commands/#
+topic write /smartlock/notification/+/#
+
+# Guest - Read only status
+user guest
+topic read /smartlock/+/status/lock
+topic read /smartlock/+/status/door

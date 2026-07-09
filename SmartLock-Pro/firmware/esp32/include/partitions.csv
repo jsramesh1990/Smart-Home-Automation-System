@@ -1,0 +1,21 @@
+# SmartLock Pro - Partition Table
+# Name, Type, SubType, Offset, Size, Flags
+
+# ESP32 partition table
+# Type: 0=APP, 1=DATA, 2=OTA
+# SubType: 0=Factory, 1=OTA_0, 2=OTA_1, 0x82=SPIFFS
+
+# Factory firmware
+nvs,          data, nvs,        0x9000,  0x6000,
+phy_init,     data, phy,        0xf000,  0x1000,
+factory,      app,  factory,    0x10000, 0x1E0000,
+
+# OTA partitions (for firmware updates)
+ota_0,        app,  ota_0,      0x1F0000, 0x1E0000,
+ota_1,        app,  ota_1,      0x3D0000, 0x1E0000,
+
+# SPIFFS for configuration and data storage
+spiffs,       data, spiffs,     0x5B0000, 0x190000,
+
+# Reserved for future use
+# coredump,    data, coredump,  0x740000, 0x10000,

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Devices{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">Devices</h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDeviceModal">
+            <i class="fas fa-plus me-2"></i>Add Device
+        </button>
+    </div>
+    
+    <!-- Device Grid -->
+    <div class="row g-4" id="device-grid">
+        <div class="col-12 text-center text-muted">
+            <i class="fas fa-spinner fa-spin me-2"></i>Loading devices...
+        </div>
+    </div>
+    
+    <!-- Add Device Modal -->
+    <div class="modal fade" id="addDeviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Device</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addDeviceForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Device ID</label>
+                            <input type="text" class="form-control" name="device_id" required>
+                            <small class="text-muted">Unique identifier for the device</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Device Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" name="location">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <select class="form-control" name="type">
+                                <option value="smartlock">Smart Lock</option>
+                                <option value="gateway">Gateway</option>
+                                <option value="sensor">Sensor</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Device</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadDevices();
+    
+    // Auto-refresh every 10 seconds
+    setInterval(loadDevices, 10000);
+    
+    // Add device form
+    $('#addDeviceForm').on('submit', function(e) {
+        e.preventDefault();
+        const data = $(this).serializeArray();
+        const payload = {};
+        data.forEach(item => payload[item.name] = item.value);
+        
+        $.ajax({
+            url: '/api/devices',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function() {
+                $('#addDeviceModal').modal('hide');
+                loadDevices();
+                toastr.success('Device added successfully');
+            },
+            error: function() {
+                toastr.error('Failed to add device');
+            }
+        });
+    });
+});
+
+function loadDevices() {
+    $.get('/api/devices', function(devices) {
+        let html = '';
+        if (devices.length === 0) {
+            html = `<div class="col-12 text-center text-muted py-5">
+                <i class="fas fa-microchip fa-3x mb-3"></i>
+                <h5>No devices found</h5>
+                <p>Click "Add Device" to register a new device</p>
+            </div>`;
+        } else {
+            devices.forEach(device => {
+                const statusClass = device.status === 'online' ? 'success' : 'danger';
+                const statusIcon = device.status === 'online' ? 'circle' : 'circle';
+                const lockIcon = device.lock_state === 'locked' ? 'lock' : 'lock-open';
+                const lockClass = device.lock_state === 'locked' ? 'danger' : 'success';
+                
+                html += `
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    <div class="card device-card shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">${device.name}</h5>
+                                    <small class="text-muted">${device.id}</small>
+                                </div>
+                                <span class="badge bg-${statusClass}">
+                                    <i class="fas fa-${statusIcon} me-1"></i>
+                                    ${device.status}
+                                </span>
+                            </div>
+                            <div class="device-info">
+                                <div class="info-item">
+                                    <i class="fas fa-map-marker-alt text-muted"></i>
+                                    <span>${device.location || 'No location'}</span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-code text-muted"></i>
+                                    <span>${device.firmware_version || 'v1.0.0'}</span>
+                                </div>
+                                <div class="info-item">
+                                    <i class="fas fa-battery-${device.battery_level > 50 ? 'full' : device.battery_level > 20 ? 'half' : 'empty'} text-muted"></i>
+                                    <span>${device.battery_level || 0}%</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-${lockClass}">
+                                    <i class="fas fa-${lockIcon} me-1"></i>
+                                    ${device.lock_state || 'unknown'}
+                                </span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary control-btn" 
+                                            data-device="${device.id}" data-action="status">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-${device.lock_state === 'locked' ? 'success' : 'danger'} control-btn"
+                                            data-device="${device.id}" 
+                                            data-action="${device.lock_state === 'locked' ? 'unlock' : 'lock'}">
+                                        <i class="fas fa-${device.lock_state === 'locked' ? 'unlock' : 'lock'}"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+        $('#device-grid').html(html);
+        
+        // Control buttons
+        $('.control-btn').on('click', function() {
+            const deviceId = $(this).data('device');
+            const action = $(this).data('action');
+            controlDevice(deviceId, action);
+        });
+    });
+}
+
+function controlDevice(deviceId, action) {
+    $.ajax({
+        url: `/api/devices/${deviceId}/control`,
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ action: action }),
+        success: function() {
+            toastr.success(`${action} command sent to ${deviceId}`);
+            setTimeout(loadDevices, 500);
+        },
+        error: function() {
+            toastr.error(`Failed to send ${action} command`);
+        }
+    });
+}
+</script>
+{% endblock %}

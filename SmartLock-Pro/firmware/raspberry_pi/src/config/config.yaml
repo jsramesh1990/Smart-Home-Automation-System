@@ -1,0 +1,72 @@
+# SmartLock Pro - Main Configuration
+
+server:
+  host: 0.0.0.0
+  port: 5000
+  debug: false
+  secret_key: ${SECRET_KEY:-dev-secret-key-change-me}
+
+database:
+  url: ${DATABASE_URL:-postgresql://smartlock:SmartLock2026!@localhost:5432/smartlock}
+  pool_size: 10
+  max_overflow: 20
+
+mqtt:
+  broker: ${MQTT_BROKER:-localhost}
+  port: ${MQTT_PORT:-1883}
+  username: ${MQTT_USERNAME:-}
+  password: ${MQTT_PASSWORD:-}
+  tls_enabled: false
+  keepalive: 60
+
+redis:
+  url: ${REDIS_URL:-redis://localhost:6379/0}
+  enabled: true
+
+influxdb:
+  url: ${INFLUXDB_URL:-http://localhost:8086}
+  token: ${INFLUXDB_TOKEN:-}
+  org: ${INFLUXDB_ORG:-smartlock}
+  bucket: ${INFLUXDB_BUCKET:-smartlock}
+
+notifications:
+  email:
+    enabled: false
+    smtp_host: smtp.gmail.com
+    smtp_port: 587
+    username: ""
+    password: ""
+    from_email: smartlock@example.com
+  push:
+    enabled: false
+    fcm_api_key: ""
+    apns_key: ""
+  sms:
+    enabled: false
+    twilio_account_sid: ""
+    twilio_auth_token: ""
+    twilio_phone_number: ""
+
+automation:
+  enabled: true
+  check_interval: 60
+  max_rules: 50
+
+security:
+  jwt_expiration: 3600
+  refresh_expiration: 86400
+  password_min_length: 8
+  max_failed_attempts: 5
+  lockout_duration: 300
+  csrf_protection: true
+
+logging:
+  level: INFO
+  file: logs/smartlock.log
+  max_size: 10485760
+  backup_count: 10
+
+device:
+  heartbeat_timeout: 120
+  auto_discovery: true
+  ota_enabled: true

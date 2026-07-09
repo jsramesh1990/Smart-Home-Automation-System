@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h1 class="h3 mb-4 text-gray-800">Dashboard</h1>
+    
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50">Total Devices</h6>
+                            <h2 class="mb-0" id="total-devices">-</h2>
+                        </div>
+                        <i class="fas fa-microchip fa-2x text-white-50"></i>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-white-50">
+                            <span id="online-devices">-</span> online, 
+                            <span id="offline-devices">-</span> offline
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50">Total Users</h6>
+                            <h2 class="mb-0" id="total-users">-</h2>
+                        </div>
+                        <i class="fas fa-users fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50">Access Today</h6>
+                            <h2 class="mb-0" id="access-today">-</h2>
+                        </div>
+                        <i class="fas fa-door-open fa-2x text-white-50"></i>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-white-50">
+                            <span id="access-granted">-</span> granted, 
+                            <span id="access-denied">-</span> denied
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-white-50">System Uptime</h6>
+                            <h2 class="mb-0" id="system-uptime">-</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Access Activity (Last 7 Days)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Access Methods</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="methodChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Access Activity</h6>
+                    <a href="{{ url_for('logs') }}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Device</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-activity">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Load dashboard stats
+    loadStats();
+    
+    // Load recent activity
+    loadRecentActivity();
+    
+    // Load charts
+    loadCharts();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadStats, 30000);
+});
+
+function loadStats() {
+    $.get('/api/dashboard/stats', function(data) {
+        if (data.devices) {
+            $('#total-devices').text(data.devices.total || 0);
+            $('#online-devices').text(data.devices.online || 0);
+            $('#offline-devices').text(data.devices.offline || 0);
+        }
+        $('#total-users').text(data.users || 0);
+        $('#access-today').text(data.events_today || 0);
+        
+        if (data.access_stats) {
+            $('#access-granted').text(data.access_stats.granted || 0);
+            $('#access-denied').text(data.access_stats.denied || 0);
+        }
+        
+        // Calculate uptime (simulated)
+        const uptime = Math.floor(Date.now() / 1000);
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+        $('#system-uptime').text(`${days}d ${hours}h ${minutes}m`);
+    });
+}
+
+function loadRecentActivity() {
+    $.get('/api/access-logs?limit=10', function(data) {
+        let html = '';
+        if (data.data && data.data.length > 0) {
+            data.data.forEach(log => {
+                const statusClass = log.granted ? 'success' : 'danger';
+                const statusIcon = log.granted ? 'check-circle' : 'times-circle';
+                const methodIcons = {
+                    'fingerprint': 'fingerprint',
+                    'rfid': 'id-card',
+                    'keypad': 'keyboard',
+                    'mobile': 'mobile-alt',
+                    'remote': 'globe'
+                };
+                const icon = methodIcons[log.method] || 'lock';
+                
+                html += `<tr>
+                    <td><i class="fas fa-user text-muted me-2"></i>${log.user}</td>
+                    <td><i class="fas fa-microchip text-muted me-2"></i>${log.device}</td>
+                    <td><i class="fas fa-${icon} text-muted me-2"></i>${log.method}</td>
+                    <td><span class="badge bg-${statusClass}">
+                        <i class="fas fa-${statusIcon} me-1"></i>${log.granted ? 'Granted' : 'Denied'}
+                    </span></td>
+                    <td><small class="text-muted">${new Date(log.timestamp).toLocaleString()}</small></td>
+                </tr>`;
+            });
+        } else {
+            html = `<tr><td colspan="5" class="text-center text-muted">No activity found</td></tr>`;
+        }
+        $('#recent-activity').html(html);
+    });
+}
+
+function loadCharts() {
+    // Activity Chart
+    const ctx1 = document.getElementById('activityChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Access Attempts',
+                data: [45, 52, 38, 65, 70, 42, 55],
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Method Chart
+    const ctx2 = document.getElementById('methodChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Fingerprint', 'RFID', 'Keypad', 'Mobile', 'Remote'],
+            datasets: [{
+                data: [35, 25, 20, 15, 5],
+                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

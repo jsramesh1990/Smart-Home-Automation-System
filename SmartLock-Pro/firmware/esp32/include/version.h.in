@@ -1,0 +1,37 @@
+// version.h.in - Version Header Template
+// This file is processed by CMake to generate version.h
+
+#ifndef VERSION_H
+#define VERSION_H
+
+#define PROJECT_NAME        "SmartLock Pro"
+#define PROJECT_VER         "${PROJECT_VER}"
+#define BUILD_TYPE          "${CMAKE_BUILD_TYPE}"
+#define BUILD_DATE          "${CMAKE_CURRENT_TIMESTAMP}"
+#define COMPILER_VERSION    "${CMAKE_CXX_COMPILER_VERSION}"
+#define TARGET_PLATFORM     "ESP32"
+
+// Git information (if available)
+#define GIT_COMMIT_HASH     "${GIT_COMMIT_HASH}"
+#define GIT_BRANCH          "${GIT_BRANCH}"
+#define GIT_TAG             "${GIT_TAG}"
+
+// Build flags
+#define DEBUG_MODE          ${DEBUG_MODE}
+#define ENABLE_OTA          ${ENABLE_OTA}
+#define ENABLE_BLE          ${ENABLE_BLE}
+#define ENABLE_MQTT         ${ENABLE_MQTT}
+
+// Build timestamp
+#define BUILD_TIMESTAMP     __DATE__ " " __TIME__
+
+// Version components
+#define VERSION_MAJOR       1
+#define VERSION_MINOR       0
+#define VERSION_PATCH       0
+#define VERSION_SUFFIX      ""
+
+// Full version string
+#define VERSION_STRING      "${PROJECT_VER}"
+
+#endif // VERSION_H

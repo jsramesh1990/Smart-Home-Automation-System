@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Access Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h1 class="h3 mb-4 text-gray-800">Access Logs</h1>
+    
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form id="filterForm" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">User</label>
+                    <input type="text" class="form-control" name="user" placeholder="Search user...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Device</label>
+                    <select class="form-control" name="device">
+                        <option value="">All Devices</option>
+                        <option value="DEV_001">Front Door</option>
+                        <option value="DEV_002">Back Door</option>
+                        <option value="DEV_003">Garage</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-control" name="status">
+                        <option value="">All</option>
+                        <option value="true">Granted</option>
+                        <option value="false">Denied</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Method</label>
+                    <select class="form-control" name="method">
+                        <option value="">All</option>
+                        <option value="fingerprint">Fingerprint</option>
+                        <option value="rfid">RFID</option>
+                        <option value="keypad">Keypad</option>
+                        <option value="mobile">Mobile</option>
+                        <option value="remote">Remote</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Logs Table -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="logsTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>User</th>
+                            <th>Device</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>IP Address</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-body">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav>
+                <ul class="pagination justify-content-center" id="pagination">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" data-page="prev">Previous</a>
+                    </li>
+                    <li class="page-item active">
+                        <a class="page-link" href="#" data-page="1">1</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="2">2</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="3">3</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#" data-page="next">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+const limit = 20;
+
+$(document).ready(function() {
+    loadLogs();
+    
+    // Filter form
+    $('#filterForm').on('submit', function(e) {
+        e.preventDefault();
+        currentPage = 1;
+        loadLogs();
+    });
+    
+    // Pagination
+    $('#pagination').on('click', 'a.page-link', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        if (page === 'prev' && currentPage > 1) {
+            currentPage--;
+            loadLogs();
+        } else if (page === 'next') {
+            currentPage++;
+            loadLogs();
+        } else if (!isNaN(page)) {
+            currentPage = parseInt(page);
+            loadLogs();
+        }
+    });
+});
+
+function loadLogs() {
+    const filters = $('#filterForm').serialize();
+    $.get(`/api/access-logs?limit=${limit}&page=${currentPage}&${filters}`, function(data) {
+        let html = '';
+        if (data.data && data.data.length > 0) {
+            let counter = (currentPage - 1) * limit + 1;
+            data.data.forEach(log => {
+                const statusClass = log.granted ? 'success' : 'danger';
+                const statusText = log.granted ? 'Granted' : 'Denied';
+                const methodIcon = {
+                    'fingerprint': 'fingerprint',
+                    'rfid': 'id-card',
+                    'keypad': 'keyboard',
+                    'mobile': 'mobile-alt',
+                    'remote': 'globe'
+                }[log.method] || 'lock';
+                
+                html += `<tr>
+                    <td>${counter++}</td>
+                    <td><i class="fas fa-user text-muted me-2"></i>${log.user || 'Unknown'}</td>
+                    <td><i class="fas fa-microchip text-muted me-2"></i>${log.device || 'N/A'}</td>
+                    <td><i class="fas fa-${methodIcon} text-muted me-2"></i>${log.method || 'unknown'}</td>
+                    <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                    <td><small class="text-muted">${log.ip_address || 'N/A'}</small></td>
+                    <td><small class="text-muted">${new Date(log.timestamp).toLocaleString()}</small></td>
+                </tr>`;
+            });
+        } else {
+            html = `<tr><td colspan="7" class="text-center text-muted">No logs found</td></tr>`;
+        }
+        $('#logs-body').html(html);
+        
+        // Update pagination
+        updatePagination(data);
+    });
+}
+
+function updatePagination(data) {
+    const totalPages = data.pages || 1;
+    let html = '';
+    
+    // Previous
+    html += `<li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="prev">Previous</a>
+    </li>`;
+    
+    // Pages
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    if (startPage > 1) {
+        html += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+        if (startPage > 2) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+            <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>`;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        html += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+    
+    // Next
+    html += `<li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" data-page="next">Next</a>
+    </li>`;
+    
+    $('#pagination').html(html);
+}
+</script>
+{% endblock %}

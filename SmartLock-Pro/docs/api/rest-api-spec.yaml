@@ -1,0 +1,867 @@
+openapi: 3.0.0
+info:
+  title: SmartLock Pro REST API
+  description: RESTful API for SmartLock Pro IoT Door Lock System
+  version: 1.0.0
+  contact:
+    name: SmartLock Pro Team
+    email: support@smartlock.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.smartlock.com/v1
+    description: Production Server
+  - url: http://localhost:3000/v1
+    description: Local Development Server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    # Common Objects
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "AUTH_001"
+        message:
+          type: string
+          example: "Invalid authentication credentials"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+    
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+    
+    # Authentication
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "admin@smartlock.com"
+        password:
+          type: string
+          format: password
+          example: "SecurePass123!"
+    
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        refresh_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        expires_in:
+          type: integer
+          example: 3600
+        user:
+          $ref: '#/components/schemas/User'
+    
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    
+    # User
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          example: "john_doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        role:
+          type: string
+          enum: [admin, user, guest]
+          example: "user"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        enabled:
+          type: boolean
+          default: true
+    
+    UserCreateRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [user, guest]
+          default: user
+    
+    # Device
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "DEV_001"
+        name:
+          type: string
+          example: "Front Door"
+        type:
+          type: string
+          enum: [smartlock, gateway, sensor]
+          example: "smartlock"
+        status:
+          type: string
+          enum: [online, offline, maintenance]
+          example: "online"
+        firmware_version:
+          type: string
+          example: "v1.2.3"
+        ip_address:
+          type: string
+          format: ipv4
+          example: "192.168.1.101"
+        mac_address:
+          type: string
+          example: "AB:CD:EF:12:34:56"
+        last_seen:
+          type: string
+          format: date-time
+        location:
+          type: string
+          example: "Main Entrance"
+        created_at:
+          type: string
+          format: date-time
+    
+    LockStatus:
+      type: object
+      properties:
+        device_id:
+          type: string
+        state:
+          type: string
+          enum: [locked, unlocked, jammed, unknown]
+        door_open:
+          type: boolean
+        battery_level:
+          type: integer
+          minimum: 0
+          maximum: 100
+        signal_strength:
+          type: integer
+          minimum: 0
+          maximum: 100
+        last_action:
+          type: string
+          format: date-time
+        user:
+          type: string
+    
+    AccessLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        user_id:
+          type: string
+        user_name:
+          type: string
+        method:
+          type: string
+          enum: [fingerprint, rfid, keypad, mobile, remote, otp]
+        granted:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+        ip_address:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    
+    OTAUpdate:
+      type: object
+      properties:
+        version:
+          type: string
+        release_date:
+          type: string
+          format: date
+        description:
+          type: string
+        file_size:
+          type: integer
+          format: int64
+        checksum:
+          type: string
+        status:
+          type: string
+          enum: [pending, downloading, installing, complete, failed]
+
+  parameters:
+    deviceId:
+      name: device_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Device Identifier
+    
+    userId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: User Identifier
+    
+    pageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      description: Page number for pagination
+    
+    limitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+      description: Items per page
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to SmartLock system
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_in:
+                    type: integer
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /devices:
+    get:
+      tags:
+        - Devices
+      summary: List all devices
+      operationId: listDevices
+      parameters:
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/limitParam'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      total:
+                        type: integer
+                      pages:
+                        type: integer
+    
+    post:
+      tags:
+        - Devices
+      summary: Register a new device
+      operationId: registerDevice
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: [smartlock, gateway]
+                location:
+                  type: string
+      responses:
+        '201':
+          description: Device registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '400':
+          description: Invalid request
+  
+  /devices/{device_id}:
+    get:
+      tags:
+        - Devices
+      summary: Get device details
+      operationId: getDevice
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Device details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+    
+    put:
+      tags:
+        - Devices
+      summary: Update device configuration
+      operationId: updateDevice
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                location:
+                  type: string
+                config:
+                  type: object
+                  properties:
+                    timeout:
+                      type: integer
+                      description: Auto-lock timeout in seconds
+                    notifications:
+                      type: boolean
+                    sound:
+                      type: boolean
+      responses:
+        '200':
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Device not found
+    
+    delete:
+      tags:
+        - Devices
+      summary: Delete/Decommission device
+      operationId: deleteDevice
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Device deleted successfully
+        '404':
+          description: Device not found
+  
+  /devices/{device_id}/status:
+    get:
+      tags:
+        - Devices
+      summary: Get current lock status
+      operationId: getLockStatus
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current lock status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LockStatus'
+        '404':
+          description: Device not found
+        '503':
+          description: Device offline
+  
+  /devices/{device_id}/lock:
+    post:
+      tags:
+        - Devices
+      summary: Lock the door
+      operationId: lockDoor
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Door locked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '404':
+          description: Device not found
+        '409':
+          description: Already locked
+  
+  /devices/{device_id}/unlock:
+    post:
+      tags:
+        - Devices
+      summary: Unlock the door
+      operationId: unlockDoor
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                method:
+                  type: string
+                  enum: [mobile, remote, emergency]
+                auth_code:
+                  type: string
+      responses:
+        '200':
+          description: Door unlocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '403':
+          description: Unauthorized access
+        '404':
+          description: Device not found
+  
+  /devices/{device_id}/ota:
+    post:
+      tags:
+        - Devices
+      summary: Trigger OTA firmware update
+      operationId: triggerOTA
+      parameters:
+        - $ref: '#/components/parameters/deviceId'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                force:
+                  type: boolean
+                  default: false
+      responses:
+        '202':
+          description: OTA update initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  update_id:
+                    type: string
+                  status:
+                    type: string
+        '404':
+          description: Device not found
+  
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List all users
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/limitParam'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+    
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  
+  /users/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Get user details
+      operationId: getUser
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    put:
+      tags:
+        - Users
+      summary: Update user
+      operationId: updateUser
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [user, guest]
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: User deleted
+  
+  /logs:
+    get:
+      tags:
+        - Logs
+      summary: Get access logs
+      operationId: getLogs
+      parameters:
+        - name: device_id
+          in: query
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: method
+          in: query
+          schema:
+            type: string
+            enum: [fingerprint, rfid, keypad, mobile, remote, otp]
+        - name: granted
+          in: query
+          schema:
+            type: boolean
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/limitParam'
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Access logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AccessLog'
+                  total:
+                    type: integer
+                  filters:
+                    type: object
+  
+  /logs/export:
+    get:
+      tags:
+        - Logs
+      summary: Export logs as CSV
+      operationId: exportLogs
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, json, pdf]
+            default: csv
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logs export file
+          content:
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: string
+  
+  /system/health:
+    get:
+      tags:
+        - System
+      summary: System health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  version:
+                    type: string
+                  uptime:
+                    type: integer
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        enum: [ok, error]
+                      mqtt:
+                        type: string
+                        enum: [ok, error]
+                      redis:
+                        type: string
+                        enum: [ok, error]
+  
+  /system/metrics:
+    get:
+      tags:
+        - System
+      summary: System metrics
+      operationId: getMetrics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: object
+                    properties:
+                      online:
+                        type: integer
+                      offline:
+                        type: integer
+                      total:
+                        type: integer
+                  users:
+                    type: integer
+                  access_today:
+                    type: integer
+                  failed_attempts:
+                    type: integer
+                  requests_per_minute:
+                    type: integer
+```
